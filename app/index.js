@@ -7,6 +7,8 @@ export default function Home() {
   const { user, loading } = useAuth();
   const { completed } = useOnboarding();
 
+  
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
