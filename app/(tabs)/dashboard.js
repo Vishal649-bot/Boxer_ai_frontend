@@ -1,13 +1,14 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Animated } from "react-native";
 import { useOnboarding } from "../../context/OnboardingContext";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getSessions } from "../../utils/sessionStorage";
 import { ScrollView } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Video } from "expo-av";
 import { LinearGradient } from 'expo-linear-gradient';
 import React from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Dashboard() {
   const { profile } = useOnboarding();
@@ -16,6 +17,52 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const statsScale = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    // Entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.spring(statsScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Pulse animation for CTA button
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -29,234 +76,398 @@ export default function Dashboard() {
   );
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Gradient Header */}
-      <LinearGradient
-        colors={['#1a1a1a', '#2d2d2d']}
-        style={styles.headerGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+    <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
+      {/* Animated Background Elements */}
+      <View style={styles.bgCircle1} />
+      <View style={styles.bgCircle2} />
+      <View style={styles.bgCircle3} />
+
+      <ScrollView 
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.greeting}>
-          Welcome{profile.name ? `, ${profile.name}` : ""} 👋
-        </Text>
-        <Text style={styles.subtext}>
-          Let's improve your boxing today.
-        </Text>
-      </LinearGradient>
-
-      {/* Main CTA */}
-      <TouchableOpacity
-        style={styles.ctaContainer}
-        onPress={() => router.push("/(tabs)/ai-check")}
-        activeOpacity={0.9}
-      >
-        <LinearGradient
-          colors={['#ff6b6b', '#ee5a6f']}
-          style={styles.cta}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        {/* Animated Header */}
+        <Animated.View 
+          style={[
+            styles.headerContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
         >
-          <View style={styles.ctaIcon}>
-            <Text style={styles.ctaIconText}>🥊</Text>
-          </View>
-          <View style={styles.ctaContent}>
-            <Text style={styles.ctaText}>Start AI Check</Text>
-            <Text style={styles.ctaSub}>Upload a video and get feedback</Text>
-          </View>
-          <Text style={styles.ctaArrow}>→</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-
-      <View style={styles.motivationCard}>
-        <Text style={styles.motivationText}>
-          💪 Try to analyze at least one session every day
-        </Text>
-      </View>
-
-      {/* Stats Section */}
-      <Text style={styles.sectionTitle}>Your Progress</Text>
-
-      <View style={styles.statsRow}>
-        <StatCard 
-          label="AI Checks" 
-          value={sessions.length.toString()}
-          icon="📊"
-          gradient={['#667eea', '#764ba2']}
-        />
-        <StatCard 
-          label="Sessions" 
-          value={sessions.length.toString()}
-          icon="🎯"
-          gradient={['#f093fb', '#f5576c']}
-        />
-      </View>
-
-      <View style={styles.statsRow}>
-        <StatCard 
-          label="Stance" 
-          value={profile.stance || "—"}
-          icon="🥋"
-          gradient={['#4facfe', '#00f2fe']}
-        />
-        <StatCard 
-          label="Level" 
-          value={profile.experience || "—"}
-          icon="⚡"
-          gradient={['#43e97b', '#38f9d7']}
-        />
-      </View>
-
-      {/* Footer note */}
-      <View style={styles.footerNote}>
-        <Text style={styles.footer}>🚀 More stats coming soon</Text>
-      </View>
-
-      {/* History Section */}
-      <Text style={[styles.sectionTitle, { marginTop: 30 }]}>
-        Previous AI Checks
-      </Text>
-
-      {sessions.length === 0 && (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateIcon}>📹</Text>
-          <Text style={styles.emptyStateText}>No previous AI checks yet</Text>
-          <Text style={styles.emptyStateSubtext}>
-            Upload your first boxing video to get started
-          </Text>
-        </View>
-      )}
-
-      {sessions.map((item) => (
-        <TouchableOpacity
-          key={item.id}
-          style={styles.historyCard}
-          onPress={() => {
-            setSelectedSession(item);
-            setModalVisible(true);
-          }}
-          activeOpacity={0.8}
-        >
-          {/* VIDEO PREVIEW */}
-          {item.videoUri && (
-            <View style={styles.videoContainer}>
-              <Video
-                source={{ uri: item.videoUri }}
-                style={styles.video}
-                resizeMode="cover"
-                isMuted
-                shouldPlay={false}
-                useNativeControls={false}
-              />
-              <View style={styles.playOverlay}>
-                <Text style={styles.playIcon}>▶️</Text>
+          <LinearGradient
+            colors={['rgba(255, 59, 48, 0.1)', 'rgba(139, 69, 255, 0.1)']}
+            style={styles.headerGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={styles.headerContent}>
+              <View>
+                <Text style={styles.greeting}>
+                  Hey{profile.name ? `, ${profile.name}` : ""} 👋
+                </Text>
+                <Text style={styles.subtext}>
+                  Ready to train harder today?
+                </Text>
               </View>
+              <View style={styles.headerIcon}>
+                <Text style={styles.headerIconText}>🥊</Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+
+        {/* Main CTA with Pulse Animation */}
+        <Animated.View 
+          style={[
+            styles.ctaWrapper,
+            { 
+              transform: [{ scale: pulseAnim }],
+              opacity: fadeAnim,
+            }
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/ai-check")}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={['#FF3B30', '#FF6B6B']}
+              style={styles.cta}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.ctaIconContainer}>
+                <View style={styles.ctaIcon}>
+                  <Text style={styles.ctaIconText}>🤖</Text>
+                </View>
+              </View>
+              <View style={styles.ctaContent}>
+                <Text style={styles.ctaText}>Start AI Analysis</Text>
+                <Text style={styles.ctaSub}>Upload video • Get instant feedback</Text>
+              </View>
+              <View style={styles.ctaArrowContainer}>
+                <Text style={styles.ctaArrow}>→</Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Motivation Card */}
+        <Animated.View 
+          style={[
+            styles.motivationCard,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
+          <LinearGradient
+            colors={['rgba(52, 199, 89, 0.15)', 'rgba(48, 209, 88, 0.15)']}
+            style={styles.motivationGradient}
+          >
+            <Text style={styles.motivationIcon}>💪</Text>
+            <Text style={styles.motivationText}>
+              Train daily for maximum improvement
+            </Text>
+          </LinearGradient>
+        </Animated.View>
+
+        {/* Stats Section */}
+        <Animated.View 
+          style={[
+            { opacity: fadeAnim, transform: [{ scale: statsScale }] }
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Your Stats</Text>
+            <View style={styles.sectionBadge}>
+              <Text style={styles.sectionBadgeText}>LIVE</Text>
+            </View>
+          </View>
+
+          <View style={styles.statsRow}>
+            <StatCard 
+              label="AI Checks" 
+              value={sessions.length.toString()}
+              icon="📊"
+              gradient={['#FF3B30', '#FF6B6B']}
+            />
+            <StatCard 
+              label="Sessions" 
+              value={sessions.length.toString()}
+              icon="🎯"
+              gradient={['#FF9500', '#FFAA00']}
+            />
+          </View>
+
+          <View style={styles.statsRow}>
+            <StatCard 
+              label="Stance" 
+              value={profile.stance || "—"}
+              icon="🥋"
+              gradient={['#007AFF', '#0096FF']}
+            />
+            <StatCard 
+              label="Level" 
+              value={profile.experience || "—"}
+              icon="⚡"
+              gradient={['#34C759', '#4CD964']}
+            />
+          </View>
+        </Animated.View>
+
+        {/* History Section */}
+        <View style={styles.historySection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Sessions</Text>
+            {sessions.length > 0 && (
+              <Text style={styles.sectionCount}>{sessions.length}</Text>
+            )}
+          </View>
+
+          {sessions.length === 0 && (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyStateIconContainer}>
+                <Text style={styles.emptyStateIcon}>📹</Text>
+              </View>
+              <Text style={styles.emptyStateText}>No Sessions Yet</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Upload your first boxing video to start tracking progress
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyStateButton}
+                onPress={() => router.push("/(tabs)/ai-check")}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#8B45FF', '#A855F7']}
+                  style={styles.emptyStateButtonGradient}
+                >
+                  <Text style={styles.emptyStateButtonText}>Get Started</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           )}
 
-          <View style={styles.historyContent}>
-            <View style={styles.historyHeader}>
-              <Text style={styles.historyTitle}>
-                🥊 {item.perspective.toUpperCase()} boxer
-              </Text>
-              <View style={styles.historyBadge}>
-                <Text style={styles.historyBadgeText}>Analyzed</Text>
-              </View>
-            </View>
-
-            <Text style={styles.historyDate}>
-              {new Date(item.createdAt).toLocaleString()}
-            </Text>
-
-            <Text numberOfLines={2} style={styles.historyText}>
-              {item.feedback}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      ))}
-
-      {/* Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <ScrollView
-              contentContainerStyle={styles.modalContent}
-              showsVerticalScrollIndicator={false}
+          {sessions.map((item, index) => (
+            <Animated.View
+              key={item.id}
+              style={[
+                {
+                  opacity: fadeAnim,
+                  transform: [{
+                    translateY: Animated.multiply(slideAnim, new Animated.Value(1 + index * 0.1))
+                  }]
+                }
+              ]}
             >
-              {selectedSession && (
-                <>
-                  {/* VIDEO */}
-                  {selectedSession.videoUri && (
-                    <View style={styles.modalVideoContainer}>
-                      <Video
-                        source={{ uri: selectedSession.videoUri }}
-                        style={styles.modalVideo}
-                        resizeMode="contain"
-                        useNativeControls
-                      />
-                    </View>
-                  )}
-
-                  <Text style={styles.modalTitle}>🥊 AI Feedback</Text>
-
-                  <View style={styles.modalMetaContainer}>
-                    <View style={styles.modalMetaItem}>
-                      <Text style={styles.modalMetaLabel}>Boxer:</Text>
-                      <Text style={styles.modalMetaValue}>
-                        {selectedSession.perspective.toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.modalMetaItem}>
-                      <Text style={styles.modalMetaLabel}>Date:</Text>
-                      <Text style={styles.modalMetaValue}>
-                        {new Date(selectedSession.createdAt).toLocaleDateString()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.modalCard}>
-                    <Text style={styles.modalCardTitle}>Analysis Results</Text>
-                    <Text style={styles.modalCardText}>
-                      {selectedSession.feedback}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={() => setModalVisible(false)}
-                    style={styles.closeBtnContainer}
-                    activeOpacity={0.8}
-                  >
+              <TouchableOpacity
+                style={styles.historyCard}
+                onPress={() => {
+                  setSelectedSession(item);
+                  setModalVisible(true);
+                }}
+                activeOpacity={0.9}
+              >
+                {/* VIDEO PREVIEW */}
+                {item.videoUri && (
+                  <View style={styles.videoContainer}>
+                    <Video
+                      source={{ uri: item.videoUri }}
+                      style={styles.video}
+                      resizeMode="cover"
+                      isMuted
+                      shouldPlay={false}
+                      useNativeControls={false}
+                    />
                     <LinearGradient
-                      colors={['#1a1a1a', '#2d2d2d']}
-                      style={styles.closeBtn}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
+                      colors={['transparent', 'rgba(0,0,0,0.7)']}
+                      style={styles.videoGradient}
                     >
-                      <Text style={styles.closeBtnText}>Close</Text>
+                      <View style={styles.playButton}>
+                        <Text style={styles.playIcon}>▶</Text>
+                      </View>
                     </LinearGradient>
-                  </TouchableOpacity>
-                </>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+                  </View>
+                )}
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.02)']}
+                  style={styles.historyContent}
+                >
+                  <View style={styles.historyHeader}>
+                    <View style={styles.historyTitleContainer}>
+                      <Text style={styles.historyEmoji}>🥊</Text>
+                      <Text style={styles.historyTitle}>
+                        {item.perspective.toUpperCase()} Boxer
+                      </Text>
+                    </View>
+                    <View style={styles.historyBadge}>
+                      <Text style={styles.historyBadgeText}>✓ Analyzed</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.historyDate}>
+                    {new Date(item.createdAt).toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </Text>
+
+                  <Text numberOfLines={2} style={styles.historyText}>
+                    {item.feedback}
+                  </Text>
+
+                  <View style={styles.historyFooter}>
+                    <Text style={styles.historyFooterText}>Tap to view details</Text>
+                    <Text style={styles.historyArrow}>→</Text>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
+          ))}
+        </View>
+
+        {/* Bottom Spacer */}
+        <View style={styles.bottomSpacer} />
+
+        {/* Modal */}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <ScrollView
+                contentContainerStyle={styles.modalContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {selectedSession && (
+                  <>
+                    {/* Modal Header */}
+                    <View style={styles.modalHeader}>
+                      <View style={styles.modalDragHandle} />
+                      <Text style={styles.modalHeaderTitle}>Session Details</Text>
+                    </View>
+
+                    {/* VIDEO */}
+                    {selectedSession.videoUri && (
+                      <View style={styles.modalVideoContainer}>
+                        <Video
+                          source={{ uri: selectedSession.videoUri }}
+                          style={styles.modalVideo}
+                          resizeMode="contain"
+                          useNativeControls
+                        />
+                      </View>
+                    )}
+
+                    {/* Meta Info */}
+                    <View style={styles.modalMetaContainer}>
+                      <LinearGradient
+                        colors={['rgba(255, 59, 48, 0.15)', 'rgba(255, 107, 107, 0.15)']}
+                        style={styles.modalMetaCard}
+                      >
+                        <Text style={styles.modalMetaIcon}>🥊</Text>
+                        <View>
+                          <Text style={styles.modalMetaLabel}>Position</Text>
+                          <Text style={styles.modalMetaValue}>
+                            {selectedSession.perspective.toUpperCase()}
+                          </Text>
+                        </View>
+                      </LinearGradient>
+                      
+                      <LinearGradient
+                        colors={['rgba(139, 69, 255, 0.15)', 'rgba(168, 85, 247, 0.15)']}
+                        style={styles.modalMetaCard}
+                      >
+                        <Text style={styles.modalMetaIcon}>📅</Text>
+                        <View>
+                          <Text style={styles.modalMetaLabel}>Date</Text>
+                          <Text style={styles.modalMetaValue}>
+                            {new Date(selectedSession.createdAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </Text>
+                        </View>
+                      </LinearGradient>
+                    </View>
+
+                    {/* Feedback Card */}
+                    <View style={styles.modalFeedbackCard}>
+                      <LinearGradient
+                        colors={['#34C759', '#4CD964']}
+                        style={styles.modalFeedbackHeader}
+                      >
+                        <Text style={styles.modalFeedbackIcon}>🤖</Text>
+                        <Text style={styles.modalFeedbackTitle}>AI Analysis</Text>
+                      </LinearGradient>
+
+                      <View style={styles.modalFeedbackContent}>
+                        <Text style={styles.modalFeedbackText}>
+                          {selectedSession.feedback}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Close Button */}
+                    <TouchableOpacity
+                      onPress={() => setModalVisible(false)}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={['#1a1a1a', '#2d2d2d']}
+                        style={styles.closeBtn}
+                      >
+                        <Text style={styles.closeBtnText}>Close</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 /* ---------- STAT CARD COMPONENT ---------- */
 
 function StatCard({ label, value, icon, gradient }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      tension: 50,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
-    <View style={styles.cardWrapper}>
+    <Animated.View 
+      style={[styles.cardWrapper, { transform: [{ scale: scaleAnim }] }]}
+      onTouchStart={handlePressIn}
+      onTouchEnd={handlePressOut}
+    >
       <LinearGradient
         colors={gradient}
         style={styles.card}
@@ -267,114 +478,202 @@ function StatCard({ label, value, icon, gradient }) {
         <Text style={styles.cardValue}>{value}</Text>
         <Text style={styles.cardLabel}>{label}</Text>
       </LinearGradient>
-    </View>
+    </Animated.View>
   );
 }
 
 /* ---------- STYLES ---------- */
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#0a0a0a",
+  },
+  bgCircle1: {
+    position: "absolute",
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+    backgroundColor: "rgba(255, 59, 48, 0.15)",
+    top: -150,
+    right: -100,
+  },
+  bgCircle2: {
+    position: "absolute",
+    width: 350,
+    height: 350,
+    borderRadius: 175,
+    backgroundColor: "rgba(139, 69, 255, 0.12)",
+    top: "30%",
+    left: -120,
+  },
+  bgCircle3: {
+    position: "absolute",
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: "rgba(255, 149, 0, 0.1)",
+    bottom: 100,
+    right: -80,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+  },
+  headerContainer: {
+    marginBottom: 24,
   },
   headerGradient: {
-    padding: 20,
-    paddingTop: 80,
-    paddingBottom: 30,
-    marginBottom: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    padding: 24,
+    paddingTop: 20,
+    paddingBottom: 24,
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   greeting: {
     fontSize: 28,
-    fontWeight: "800",
-    color: "#fff",
+    fontWeight: "900",
+    color: "#FFFFFF",
     letterSpacing: -0.5,
+    marginBottom: 6,
   },
   subtext: {
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 6,
+    color: "rgba(255, 255, 255, 0.7)",
     fontSize: 15,
-    fontWeight: "500",
+    fontWeight: "600",
   },
-  ctaContainer: {
+  headerIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(255, 59, 48, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerIconText: {
+    fontSize: 26,
+  },
+  ctaWrapper: {
     marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 20,
-    shadowColor: "#ff6b6b",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+    marginBottom: 20,
   },
   cta: {
     padding: 20,
     borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
+    shadowColor: "#FF3B30",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  ctaIconContainer: {
+    marginRight: 16,
   },
   ctaIcon: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
   },
   ctaIconText: {
-    fontSize: 24,
+    fontSize: 26,
   },
   ctaContent: {
     flex: 1,
-    marginLeft: 16,
   },
   ctaText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
+    marginBottom: 4,
   },
   ctaSub: {
-    color: "rgba(255,255,255,0.9)",
-    marginTop: 2,
+    color: "rgba(255, 255, 255, 0.9)",
     fontSize: 13,
+    fontWeight: "500",
+  },
+  ctaArrowContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   ctaArrow: {
-    color: "#fff",
-    fontSize: 24,
+    color: "#FFFFFF",
+    fontSize: 20,
     fontWeight: "bold",
   },
   motivationCard: {
     marginHorizontal: 20,
-    marginBottom: 24,
-    backgroundColor: "#fff",
+    marginBottom: 32,
+  },
+  motivationGradient: {
     padding: 16,
     borderRadius: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "#43e97b",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.3)",
+  },
+  motivationIcon: {
+    fontSize: 24,
+    marginRight: 12,
   },
   motivationText: {
-    color: "#333",
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "600",
-  },
-  sectionTitle: {
-    fontSize: 20,
     fontWeight: "700",
+    flex: 1,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 16,
     marginHorizontal: 20,
-    color: "#1a1a1a",
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#FFFFFF",
+  },
+  sectionBadge: {
+    backgroundColor: "rgba(255, 59, 48, 0.2)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 59, 48, 0.3)",
+  },
+  sectionBadgeText: {
+    color: "#FF3B30",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  sectionCount: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 16,
+    fontWeight: "700",
   },
   statsRow: {
     flexDirection: "row",
     paddingHorizontal: 20,
-    marginBottom: 12,
-    gap: 12,
+    marginBottom: 16,
+    gap: 16,
   },
   cardWrapper: {
     flex: 1,
@@ -384,216 +683,260 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   cardIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+    fontSize: 36,
+    marginBottom: 12,
   },
   cardValue: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#fff",
-    marginBottom: 4,
+    fontSize: 28,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    marginBottom: 6,
   },
   cardLabel: {
-    color: "rgba(255,255,255,0.9)",
+    color: "rgba(255, 255, 255, 0.9)",
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
-  footerNote: {
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  footer: {
-    color: "#888",
-    fontSize: 14,
-    fontWeight: "500",
+  historySection: {
+    marginTop: 32,
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: 48,
     paddingHorizontal: 20,
+    marginHorizontal: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  emptyStateIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(139, 69, 255, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
   },
   emptyStateIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    fontSize: 40,
   },
   emptyStateText: {
-    color: "#666",
-    fontSize: 16,
-    fontWeight: "600",
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "800",
     marginBottom: 8,
   },
   emptyStateSubtext: {
-    color: "#999",
+    color: "rgba(255, 255, 255, 0.6)",
     fontSize: 14,
     textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  emptyStateButton: {
+    width: "100%",
+  },
+  emptyStateButtonGradient: {
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+  },
+  emptyStateButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
   historyCard: {
-    backgroundColor: "#fff",
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 20,
     borderRadius: 20,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   videoContainer: {
     position: "relative",
+    height: 200,
   },
   video: {
     width: "100%",
-    height: 200,
+    height: "100%",
     backgroundColor: "#000",
   },
-  playOverlay: {
+  videoGradient: {
     position: "absolute",
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
+    height: "50%",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingBottom: 20,
+  },
+  playButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.3)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   playIcon: {
-    fontSize: 48,
+    fontSize: 20,
+    marginLeft: 4,
   },
   historyContent: {
-    padding: 16,
+    padding: 20,
   },
   historyHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  historyTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  historyEmoji: {
+    fontSize: 20,
+    marginRight: 8,
   },
   historyTitle: {
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: 16,
-    color: "#1a1a1a",
+    color: "#FFFFFF",
   },
   historyBadge: {
-    backgroundColor: "#43e97b",
+    backgroundColor: "rgba(52, 199, 89, 0.2)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.3)",
   },
   historyBadgeText: {
-    color: "#fff",
+    color: "#34C759",
     fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
+    fontWeight: "800",
   },
   historyDate: {
-    fontSize: 12,
-    color: "#999",
-    marginBottom: 10,
-    fontWeight: "500",
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.5)",
+    marginBottom: 12,
+    fontWeight: "600",
   },
   historyText: {
-    color: "#555",
-    lineHeight: 20,
+    color: "rgba(255, 255, 255, 0.8)",
+    lineHeight: 22,
     fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 12,
+  },
+  historyFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  historyFooterText: {
+    color: "rgba(255, 255, 255, 0.5)",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  historyArrow: {
+    color: "rgba(255, 255, 255, 0.5)",
+    fontSize: 16,
+  },
+  bottomSpacer: {
+    height: 40,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
     justifyContent: "flex-end",
   },
   modalContainer: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    backgroundColor: "#1a1a1a",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     maxHeight: "90%",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.1)",
   },
   modalContent: {
     padding: 24,
     paddingBottom: 40,
   },
-  modalVideoContainer: {
-    borderRadius: 16,
-    overflow: "hidden",
+  modalHeader: {
+    alignItems: "center",
     marginBottom: 20,
+  },
+  modalDragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    marginBottom: 16,
+  },
+  modalHeaderTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  modalVideoContainer: {
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 24,
     backgroundColor: "#000",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   modalVideo: {
     width: "100%",
     height: 220,
   },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    marginBottom: 16,
-    color: "#1a1a1a",
-  },
   modalMetaContainer: {
     flexDirection: "row",
-    gap: 20,
-    marginBottom: 20,
+    gap: 12,
+    marginBottom: 24,
   },
-  modalMetaItem: {
+  modalMetaCard: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  modalMetaIcon: {
+    fontSize: 28,
   },
   modalMetaLabel: {
-    fontSize: 12,
-    color: "#999",
-    fontWeight: "600",
+    fontSize: 11,
+    color: "rgba(255, 255, 255, 0.6)",
+    fontWeight: "700",
     textTransform: "uppercase",
     marginBottom: 4,
+    letterSpacing: 0.5,
   },
   modalMetaValue: {
     fontSize: 15,
-    color: "#1a1a1a",
-    fontWeight: "700",
-  },
-  modalCard: {
-    backgroundColor: "#f8f9fa",
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
-    borderLeftWidth: 4,
-    borderLeftColor: "#ff6b6b",
-  },
-  modalCardTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1a1a1a",
-    marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  modalCardText: {
-    lineHeight: 24,
-    color: "#333",
-    fontSize: 15,
-  },
-  closeBtnContainer: {
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  closeBtn: {
-    padding: 18,
-    alignItems: "center",
-  },
-  closeBtnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-});
+  }
+,  })
