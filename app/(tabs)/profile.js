@@ -1,16 +1,19 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Animated } from "react-native";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useOnboarding } from "../../context/OnboardingContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { signOut } = useAuth();
+  const { user, isLoaded } = useUser();
   const { profile } = useOnboarding();
   const router = useRouter();
+  const [userLoaded, setUserLoaded] = useState(false);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -19,7 +22,12 @@ export default function Profile() {
   const avatarPulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Entrance animations
+    if (isLoaded) {
+      setUserLoaded(true);
+    }
+  }, [isLoaded, user]);
+
+  useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -41,7 +49,6 @@ export default function Profile() {
       }),
     ]).start();
 
-    // Continuous avatar pulse
     Animated.loop(
       Animated.sequence([
         Animated.timing(avatarPulse, {
@@ -60,7 +67,7 @@ export default function Profile() {
 
   const resetOnboarding = async () => {
     Alert.alert(
-      "Reset onboarding?",
+      "Reset Onboarding?",
       "You will need to answer onboarding questions again.",
       [
         { text: "Cancel", style: "cancel" },
@@ -76,9 +83,58 @@ export default function Profile() {
     );
   };
 
+  const getDisplayName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user?.firstName) {
+      return user.firstName;
+    }
+    return profile?.name || 'Fighter';
+  };
+
+  const getPrimaryEmail = () => {
+    if (user?.primaryEmailAddress?.emailAddress) {
+      return user.primaryEmailAddress.emailAddress;
+    }
+    if (user?.emailAddresses && user.emailAddresses.length > 0) {
+      return user.emailAddresses[0].emailAddress;
+    }
+    return 'No email';
+  };
+
+  const getPhone = () => {
+    if (user?.phoneNumbers && user.phoneNumbers.length > 0) {
+      return user.phoneNumbers[0].phoneNumber;
+    }
+    return 'Not set';
+  };
+
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    try {
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return 'N/A';
+    }
+  };
+
+  if (!isLoaded || !userLoaded) {
+    return (
+      <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-      {/* Animated Background Elements */}
       <View style={styles.bgCircle1} />
       <View style={styles.bgCircle2} />
       <View style={styles.bgCircle3} />
@@ -88,7 +144,7 @@ export default function Profile() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Animated Header Background */}
+        {/* Header Section */}
         <Animated.View 
           style={[
             styles.headerSection,
@@ -105,7 +161,6 @@ export default function Profile() {
             end={{ x: 0, y: 1 }}
           />
 
-          {/* Profile Avatar with Pulse Animation */}
           <Animated.View 
             style={[
               styles.avatarContainer,
@@ -120,21 +175,22 @@ export default function Profile() {
             >
               <View style={styles.avatarInner}>
                 <Text style={styles.avatarText}>
-                  {profile.name ? profile.name.charAt(0).toUpperCase() : '🥊'}
+                  {getDisplayName().charAt(0).toUpperCase()}
                 </Text>
               </View>
             </LinearGradient>
           </Animated.View>
 
-          <Text style={styles.title}>{profile.name || 'Boxer'}</Text>
-          <Text style={styles.subtitle}>{user?.email}</Text>
+          <Text style={styles.title}>{getDisplayName()}</Text>
+          <Text style={styles.subtitle}>{getPrimaryEmail()}</Text>
 
           <View style={styles.profileBadge}>
-            <Text style={styles.profileBadgeText}>⚡ ACTIVE FIGHTER</Text>
+            <MaterialCommunityIcons name="lightning-bolt" size={12} color="#FF3B30" />
+            <Text style={styles.profileBadgeText}>ACTIVE FIGHTER</Text>
           </View>
         </Animated.View>
 
-        {/* Stats Cards Grid with Scale Animation */}
+        {/* Stats Cards Grid */}
         <Animated.View 
           style={[
             {
@@ -145,36 +201,40 @@ export default function Profile() {
         >
           <View style={styles.cardsContainer}>
             <InfoCard 
-              icon="🥊" 
+              icon="dumbbell"
               label="Experience" 
-              value={profile.experience} 
+              value={profile?.experience || 'N/A'} 
               gradient={['#FF3B30', '#FF6B6B']}
+              colors={{ bg: 'rgba(255, 59, 48, 0.15)', border: 'rgba(255, 59, 48, 0.3)' }}
             />
             <InfoCard 
-              icon="🎯" 
+              icon="target"
               label="Goal" 
-              value={profile.goal} 
-              gradient={['#FF9500', '#FFAA00']}
+              value={profile?.goal || 'N/A'} 
+              gradient={['#FFD60A', '#FFC300']}
+              colors={{ bg: 'rgba(255, 195, 0, 0.15)', border: 'rgba(255, 195, 0, 0.3)' }}
             />
           </View>
 
           <View style={styles.cardsContainer}>
             <InfoCard 
-              icon="🥋" 
+              icon="shield-half-full"
               label="Stance" 
-              value={profile.stance} 
+              value={profile?.stance || 'N/A'} 
               gradient={['#007AFF', '#0096FF']}
+              colors={{ bg: 'rgba(0, 122, 255, 0.15)', border: 'rgba(0, 122, 255, 0.3)' }}
             />
             <InfoCard 
-              icon="⚡" 
+              icon="check-circle"
               label="Status" 
               value="Active" 
               gradient={['#34C759', '#4CD964']}
+              colors={{ bg: 'rgba(52, 199, 89, 0.15)', border: 'rgba(52, 199, 89, 0.3)' }}
             />
           </View>
         </Animated.View>
 
-        {/* Detailed Info Section */}
+        {/* Clerk User Details Section */}
         <Animated.View 
           style={[
             {
@@ -185,23 +245,79 @@ export default function Profile() {
         >
           <View style={styles.detailsCard}>
             <View style={styles.detailsHeader}>
-              <Text style={styles.detailsTitle}>Fighter Profile</Text>
+              <Text style={styles.detailsTitle}>Account Details</Text>
               <View style={styles.detailsBadge}>
-                <Text style={styles.detailsBadgeText}>📊</Text>
+                <MaterialCommunityIcons name="account" size={18} color="#FF3B30" />
               </View>
             </View>
             
-            <ProfileRow label="Full Name" value={profile.name} icon="👤" />
+            <ProfileRow 
+              label="Full Name" 
+              value={getDisplayName()} 
+              icon="account"
+              iconColor="#FF3B30"
+            />
             <View style={styles.divider} />
-            <ProfileRow label="Experience Level" value={profile.experience} icon="📊" />
+            <ProfileRow 
+              label="Email" 
+              value={getPrimaryEmail()} 
+              icon="email"
+              iconColor="#FFD60A"
+            />
             <View style={styles.divider} />
-            <ProfileRow label="Training Goal" value={profile.goal} icon="🎯" />
+            <ProfileRow 
+              label="Phone" 
+              value={getPhone()} 
+              icon="phone"
+              iconColor="#007AFF"
+            />
             <View style={styles.divider} />
-            <ProfileRow label="Fighting Stance" value={profile.stance} icon="🥊" />
+            <ProfileRow 
+              label="Member Since" 
+              value={formatDate(user?.createdAt)} 
+              icon="calendar"
+              iconColor="#34C759"
+            />
+            <View style={styles.divider} />
+            <ProfileRow 
+              label="Last Sign In" 
+              value={formatDate(user?.lastSignInAt)} 
+              icon="clock"
+              iconColor="#FF3B30"
+            />
           </View>
         </Animated.View>
 
-        {/* Actions with Fade Animation */}
+        {/* Fighter Profile Details Section */}
+        {profile && (
+          <Animated.View 
+            style={[
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }]
+              }
+            ]}
+          >
+            <View style={styles.detailsCard}>
+              <View style={styles.detailsHeader}>
+                <Text style={styles.detailsTitle}>Fighter Profile</Text>
+                <View style={styles.detailsBadge}>
+                  <MaterialCommunityIcons name="martial-arts" size={18} color="#FF3B30" />
+                </View>
+              </View>
+              
+              <ProfileRow label="Name" value={profile.name} icon="tag" iconColor="#FFD60A" />
+              <View style={styles.divider} />
+              <ProfileRow label="Experience" value={profile.experience} icon="chart-line" iconColor="#007AFF" />
+              <View style={styles.divider} />
+              <ProfileRow label="Goal" value={profile.goal} icon="target" iconColor="#34C759" />
+              <View style={styles.divider} />
+              <ProfileRow label="Stance" value={profile.stance} icon="shield-half-full" iconColor="#FF3B30" />
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Actions */}
         <Animated.View 
           style={[
             styles.actions,
@@ -210,17 +326,17 @@ export default function Profile() {
         >
           <ActionButton
             text="Reset Onboarding"
-            icon="🔄"
+            icon="refresh"
             type="secondary"
             onPress={resetOnboarding}
           />
           <ActionButton
             text="Logout"
-            icon="🚪"
+            icon="logout"
             type="danger"
             onPress={async () => {
-              await logout();
-              router.replace("/(auth)/login");
+              await signOut();
+              router.replace("/(auth)/sign-in");
             }}
           />
         </Animated.View>
@@ -231,7 +347,7 @@ export default function Profile() {
 
 /* ---------- INFO CARD COMPONENT ---------- */
 
-function InfoCard({ icon, label, value, gradient }) {
+function InfoCard({ icon, label, value, gradient, colors }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -262,7 +378,9 @@ function InfoCard({ icon, label, value, gradient }) {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <Text style={styles.infoIcon}>{icon}</Text>
+        <View style={[styles.infoIconContainer, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+          <MaterialCommunityIcons name={icon} size={28} color="#FFFFFF" />
+        </View>
         <Text style={styles.infoLabel}>{label}</Text>
         <Text style={styles.infoValue}>{value || '—'}</Text>
       </LinearGradient>
@@ -272,16 +390,16 @@ function InfoCard({ icon, label, value, gradient }) {
 
 /* ---------- PROFILE ROW COMPONENT ---------- */
 
-function ProfileRow({ label, value, icon }) {
+function ProfileRow({ label, value, icon, iconColor }) {
   return (
     <View style={styles.row}>
       <View style={styles.rowLeft}>
         <View style={styles.rowIconContainer}>
-          <Text style={styles.rowIcon}>{icon}</Text>
+          <MaterialCommunityIcons name={icon} size={18} color={iconColor} />
         </View>
         <Text style={styles.label}>{label}</Text>
       </View>
-      <Text style={styles.value}>{value || "—"}</Text>
+      <Text style={[styles.value, styles.valueText]} numberOfLines={2}>{value || "—"}</Text>
     </View>
   );
 }
@@ -322,12 +440,12 @@ function ActionButton({ text, onPress, type, icon }) {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={styles.buttonIcon}>{icon}</Text>
+            <MaterialCommunityIcons name={icon} size={20} color="#fff" />
             <Text style={[styles.buttonText, { color: '#fff' }]}>{text}</Text>
           </LinearGradient>
         ) : (
           <View style={[styles.button, styles.secondaryButton]}>
-            <Text style={styles.buttonIcon}>{icon}</Text>
+            <MaterialCommunityIcons name={icon} size={20} color="#FFFFFF" />
             <Text style={styles.buttonText}>{text}</Text>
           </View>
         )}
@@ -342,6 +460,16 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#0a0a0a",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   bgCircle1: {
     position: "absolute",
@@ -431,6 +559,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   profileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: 'rgba(255, 59, 48, 0.2)',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -463,9 +594,14 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  infoIcon: {
-    fontSize: 36,
+  infoIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 10,
+    borderWidth: 1,
   },
   infoLabel: {
     fontSize: 11,
@@ -511,9 +647,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 59, 48, 0.3)',
   },
-  detailsBadgeText: {
-    fontSize: 18,
-  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -533,9 +666,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rowIcon: {
-    fontSize: 18,
-  },
   label: {
     fontSize: 15,
     color: "rgba(255, 255, 255, 0.7)",
@@ -545,6 +675,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
     color: '#FFFFFF',
+  },
+  valueText: {
+    maxWidth: '50%',
   },
   divider: {
     height: 1,
@@ -556,7 +689,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flexDirection: 'row',
-    padding: 20,
+    padding: 16,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: 'center',
@@ -572,11 +705,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.15)',
   },
-  buttonIcon: {
-    fontSize: 20,
-  },
   buttonText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
     color: '#FFFFFF',
   },

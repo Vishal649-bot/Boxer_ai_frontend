@@ -9,6 +9,16 @@ import { Video } from "expo-av";
 import { LinearGradient } from 'expo-linear-gradient';
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+
+// Color Scheme
+const COLORS = {
+  red: { main: '#FF3B30', light: 'rgba(255, 59, 48, 0.15)', border: 'rgba(255, 59, 48, 0.3)', gradient: ['#FF3B30', '#FF6B6B'] },
+  yellow: { main: '#FFD60A', light: 'rgba(255, 195, 0, 0.15)', border: 'rgba(255, 195, 0, 0.3)', gradient: ['#FFD60A', '#FFC300'] },
+  blue: { main: '#007AFF', light: 'rgba(0, 122, 255, 0.15)', border: 'rgba(0, 122, 255, 0.3)', gradient: ['#007AFF', '#0096FF'] },
+  green: { main: '#34C759', light: 'rgba(52, 199, 89, 0.15)', border: 'rgba(52, 199, 89, 0.3)', gradient: ['#34C759', '#4CD964'] },
+  purple: { main: '#8B45FF', light: 'rgba(139, 69, 255, 0.15)', border: 'rgba(139, 69, 255, 0.3)', gradient: ['#8B45FF', '#A855F7'] },
+};
 
 export default function Dashboard() {
   const { profile } = useOnboarding();
@@ -25,7 +35,6 @@ export default function Dashboard() {
   const statsScale = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
-    // Entrance animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -47,7 +56,6 @@ export default function Dashboard() {
       }),
     ]).start();
 
-    // Pulse animation for CTA button
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -77,7 +85,6 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-      {/* Animated Background Elements */}
       <View style={styles.bgCircle1} />
       <View style={styles.bgCircle2} />
       <View style={styles.bgCircle3} />
@@ -111,8 +118,8 @@ export default function Dashboard() {
                   Ready to train harder today?
                 </Text>
               </View>
-              <View style={styles.headerIcon}>
-                <Text style={styles.headerIconText}>🥊</Text>
+              <View style={[styles.headerIcon, { backgroundColor: COLORS.red.light }]}>
+                <MaterialCommunityIcons name="boxing-glove" size={28} color={COLORS.red.main} />
               </View>
             </View>
           </LinearGradient>
@@ -133,14 +140,14 @@ export default function Dashboard() {
             activeOpacity={0.9}
           >
             <LinearGradient
-              colors={['#FF3B30', '#FF6B6B']}
+              colors={COLORS.red.gradient}
               style={styles.cta}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
               <View style={styles.ctaIconContainer}>
                 <View style={styles.ctaIcon}>
-                  <Text style={styles.ctaIconText}>🤖</Text>
+                  <MaterialCommunityIcons name="robot-happy" size={26} color="#fff" />
                 </View>
               </View>
               <View style={styles.ctaContent}>
@@ -148,7 +155,7 @@ export default function Dashboard() {
                 <Text style={styles.ctaSub}>Upload video • Get instant feedback</Text>
               </View>
               <View style={styles.ctaArrowContainer}>
-                <Text style={styles.ctaArrow}>→</Text>
+                <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
               </View>
             </LinearGradient>
           </TouchableOpacity>
@@ -165,10 +172,10 @@ export default function Dashboard() {
           ]}
         >
           <LinearGradient
-            colors={['rgba(52, 199, 89, 0.15)', 'rgba(48, 209, 88, 0.15)']}
-            style={styles.motivationGradient}
+            colors={COLORS.green.gradient}
+            style={[styles.motivationGradient, { borderColor: COLORS.green.border }]}
           >
-            <Text style={styles.motivationIcon}>💪</Text>
+            <MaterialCommunityIcons name="lightning-bolt" size={24} color="#fff" style={{ marginRight: 12 }} />
             <Text style={styles.motivationText}>
               Train daily for maximum improvement
             </Text>
@@ -183,8 +190,8 @@ export default function Dashboard() {
         >
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Your Stats</Text>
-            <View style={styles.sectionBadge}>
-              <Text style={styles.sectionBadgeText}>LIVE</Text>
+            <View style={[styles.sectionBadge, { backgroundColor: COLORS.red.light, borderColor: COLORS.red.border }]}>
+              <Text style={[styles.sectionBadgeText, { color: COLORS.red.main }]}>LIVE</Text>
             </View>
           </View>
 
@@ -192,14 +199,18 @@ export default function Dashboard() {
             <StatCard 
               label="AI Checks" 
               value={sessions.length.toString()}
-              icon="📊"
-              gradient={['#FF3B30', '#FF6B6B']}
+              icon="chart-box"
+              gradient={COLORS.red.gradient}
+              iconColor={COLORS.red.main}
+              bgColor={COLORS.red.light}
             />
             <StatCard 
               label="Sessions" 
               value={sessions.length.toString()}
-              icon="🎯"
-              gradient={['#FF9500', '#FFAA00']}
+              icon="target"
+              gradient={COLORS.yellow.gradient}
+              iconColor={COLORS.yellow.main}
+              bgColor={COLORS.yellow.light}
             />
           </View>
 
@@ -207,14 +218,18 @@ export default function Dashboard() {
             <StatCard 
               label="Stance" 
               value={profile.stance || "—"}
-              icon="🥋"
-              gradient={['#007AFF', '#0096FF']}
+              icon="shield-half-full"
+              gradient={COLORS.blue.gradient}
+              iconColor={COLORS.blue.main}
+              bgColor={COLORS.blue.light}
             />
             <StatCard 
               label="Level" 
               value={profile.experience || "—"}
-              icon="⚡"
-              gradient={['#34C759', '#4CD964']}
+              icon="lightning-bolt"
+              gradient={COLORS.green.gradient}
+              iconColor={COLORS.green.main}
+              bgColor={COLORS.green.light}
             />
           </View>
         </Animated.View>
@@ -230,8 +245,8 @@ export default function Dashboard() {
 
           {sessions.length === 0 && (
             <View style={styles.emptyState}>
-              <View style={styles.emptyStateIconContainer}>
-                <Text style={styles.emptyStateIcon}>📹</Text>
+              <View style={[styles.emptyStateIconContainer, { backgroundColor: COLORS.purple.light }]}>
+                <MaterialCommunityIcons name="video" size={40} color={COLORS.purple.main} />
               </View>
               <Text style={styles.emptyStateText}>No Sessions Yet</Text>
               <Text style={styles.emptyStateSubtext}>
@@ -243,7 +258,7 @@ export default function Dashboard() {
                 activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={['#8B45FF', '#A855F7']}
+                  colors={COLORS.purple.gradient}
                   style={styles.emptyStateButtonGradient}
                 >
                   <Text style={styles.emptyStateButtonText}>Get Started</Text>
@@ -288,7 +303,7 @@ export default function Dashboard() {
                       style={styles.videoGradient}
                     >
                       <View style={styles.playButton}>
-                        <Text style={styles.playIcon}>▶</Text>
+                        <MaterialCommunityIcons name="play" size={20} color="#000" />
                       </View>
                     </LinearGradient>
                   </View>
@@ -300,13 +315,14 @@ export default function Dashboard() {
                 >
                   <View style={styles.historyHeader}>
                     <View style={styles.historyTitleContainer}>
-                      <Text style={styles.historyEmoji}>🥊</Text>
+                      <MaterialCommunityIcons name="boxing-glove" size={20} color={COLORS.red.main} />
                       <Text style={styles.historyTitle}>
                         {item.perspective.toUpperCase()} Boxer
                       </Text>
                     </View>
-                    <View style={styles.historyBadge}>
-                      <Text style={styles.historyBadgeText}>✓ Analyzed</Text>
+                    <View style={[styles.historyBadge, { backgroundColor: COLORS.green.light, borderColor: COLORS.green.border }]}>
+                      <MaterialCommunityIcons name="check-circle" size={12} color={COLORS.green.main} />
+                      <Text style={[styles.historyBadgeText, { color: COLORS.green.main }]}> Analyzed</Text>
                     </View>
                   </View>
 
@@ -325,7 +341,7 @@ export default function Dashboard() {
 
                   <View style={styles.historyFooter}>
                     <Text style={styles.historyFooterText}>Tap to view details</Text>
-                    <Text style={styles.historyArrow}>→</Text>
+                    <MaterialCommunityIcons name="arrow-right" size={16} color="rgba(255, 255, 255, 0.5)" />
                   </View>
                 </LinearGradient>
               </TouchableOpacity>
@@ -333,7 +349,6 @@ export default function Dashboard() {
           ))}
         </View>
 
-        {/* Bottom Spacer */}
         <View style={styles.bottomSpacer} />
 
         {/* Modal */}
@@ -372,10 +387,10 @@ export default function Dashboard() {
                     {/* Meta Info */}
                     <View style={styles.modalMetaContainer}>
                       <LinearGradient
-                        colors={['rgba(255, 59, 48, 0.15)', 'rgba(255, 107, 107, 0.15)']}
-                        style={styles.modalMetaCard}
+                        colors={COLORS.red.gradient}
+                        style={[styles.modalMetaCard, { borderColor: COLORS.red.border }]}
                       >
-                        <Text style={styles.modalMetaIcon}>🥊</Text>
+                        <MaterialCommunityIcons name="boxing-glove" size={28} color="#fff" />
                         <View>
                           <Text style={styles.modalMetaLabel}>Position</Text>
                           <Text style={styles.modalMetaValue}>
@@ -385,10 +400,10 @@ export default function Dashboard() {
                       </LinearGradient>
                       
                       <LinearGradient
-                        colors={['rgba(139, 69, 255, 0.15)', 'rgba(168, 85, 247, 0.15)']}
-                        style={styles.modalMetaCard}
+                        colors={COLORS.purple.gradient}
+                        style={[styles.modalMetaCard, { borderColor: COLORS.purple.border }]}
                       >
-                        <Text style={styles.modalMetaIcon}>📅</Text>
+                        <MaterialCommunityIcons name="calendar" size={28} color="#fff" />
                         <View>
                           <Text style={styles.modalMetaLabel}>Date</Text>
                           <Text style={styles.modalMetaValue}>
@@ -404,10 +419,10 @@ export default function Dashboard() {
                     {/* Feedback Card */}
                     <View style={styles.modalFeedbackCard}>
                       <LinearGradient
-                        colors={['#34C759', '#4CD964']}
+                        colors={COLORS.green.gradient}
                         style={styles.modalFeedbackHeader}
                       >
-                        <Text style={styles.modalFeedbackIcon}>🤖</Text>
+                        <MaterialCommunityIcons name="robot-happy" size={24} color="#fff" />
                         <Text style={styles.modalFeedbackTitle}>AI Analysis</Text>
                       </LinearGradient>
 
@@ -443,7 +458,7 @@ export default function Dashboard() {
 
 /* ---------- STAT CARD COMPONENT ---------- */
 
-function StatCard({ label, value, icon, gradient }) {
+function StatCard({ label, value, icon, gradient, iconColor, bgColor }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -474,7 +489,9 @@ function StatCard({ label, value, icon, gradient }) {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <Text style={styles.cardIcon}>{icon}</Text>
+        <View style={[styles.cardIconContainer, { backgroundColor: bgColor }]}>
+          <MaterialCommunityIcons name={icon} size={32} color="#fff" />
+        </View>
         <Text style={styles.cardValue}>{value}</Text>
         <Text style={styles.cardLabel}>{label}</Text>
       </LinearGradient>
@@ -553,12 +570,8 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "rgba(255, 59, 48, 0.2)",
     justifyContent: "center",
     alignItems: "center",
-  },
-  headerIconText: {
-    fontSize: 26,
   },
   ctaWrapper: {
     marginHorizontal: 20,
@@ -586,9 +599,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  ctaIconText: {
-    fontSize: 26,
-  },
   ctaContent: {
     flex: 1,
   },
@@ -611,26 +621,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  ctaArrow: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  motivationCard: {
-    marginHorizontal: 20,
-    marginBottom: 32,
-  },
   motivationGradient: {
     padding: 16,
     borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(52, 199, 89, 0.3)",
   },
-  motivationIcon: {
-    fontSize: 24,
-    marginRight: 12,
+  motivationCard: {
+    marginHorizontal: 20,
+    marginBottom: 32,
   },
   motivationText: {
     color: "#FFFFFF",
@@ -651,15 +651,12 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   sectionBadge: {
-    backgroundColor: "rgba(255, 59, 48, 0.2)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 59, 48, 0.3)",
   },
   sectionBadgeText: {
-    color: "#FF3B30",
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 1,
@@ -688,12 +685,16 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  cardIcon: {
-    fontSize: 36,
+  cardIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 12,
   },
   cardValue: {
-    fontSize: 28,
+    fontSize: 18,
     fontWeight: "900",
     color: "#FFFFFF",
     marginBottom: 6,
@@ -722,13 +723,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "rgba(139, 69, 255, 0.15)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
-  },
-  emptyStateIcon: {
-    fontSize: 40,
   },
   emptyStateText: {
     color: "#FFFFFF",
@@ -796,10 +793,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
-  playIcon: {
-    fontSize: 20,
-    marginLeft: 4,
-  },
   historyContent: {
     padding: 20,
   },
@@ -812,10 +805,7 @@ const styles = StyleSheet.create({
   historyTitleContainer: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  historyEmoji: {
-    fontSize: 20,
-    marginRight: 8,
+    gap: 8,
   },
   historyTitle: {
     fontWeight: "800",
@@ -823,15 +813,14 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   historyBadge: {
-    backgroundColor: "rgba(52, 199, 89, 0.2)",
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(52, 199, 89, 0.3)",
   },
   historyBadgeText: {
-    color: "#34C759",
     fontSize: 10,
     fontWeight: "800",
   },
@@ -857,10 +846,6 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.5)",
     fontSize: 12,
     fontWeight: "600",
-  },
-  historyArrow: {
-    color: "rgba(255, 255, 255, 0.5)",
-    fontSize: 16,
   },
   bottomSpacer: {
     height: 40,
@@ -923,14 +908,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     gap: 12,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
-  modalMetaIcon: {
-    fontSize: 28,
   },
   modalMetaLabel: {
     fontSize: 11,
-    color: "rgba(255, 255, 255, 0.6)",
+    color: "rgba(255, 255, 255, 0.7)",
     fontWeight: "700",
     textTransform: "uppercase",
     marginBottom: 4,
@@ -938,5 +919,46 @@ const styles = StyleSheet.create({
   },
   modalMetaValue: {
     fontSize: 15,
-  }
-,  })
+    color: "#FFFFFF",
+    fontWeight: "800",
+  },
+  modalFeedbackCard: {
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 20,
+  },
+  modalFeedbackHeader: {
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  modalFeedbackTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  modalFeedbackIcon: {
+    fontSize: 24,
+  },
+  modalFeedbackContent: {
+    padding: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+  },
+  modalFeedbackText: {
+    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: 14,
+    lineHeight: 22,
+    fontWeight: "500",
+  },
+  closeBtn: {
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+  },
+  closeBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+});
