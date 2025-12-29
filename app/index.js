@@ -1,18 +1,15 @@
 import { Redirect } from "expo-router";
-import { useAuth } from "../context/AuthContext";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useOnboarding } from "../context/OnboardingContext";
 import { View, ActivityIndicator } from "react-native";
-import { useEffect, useState } from "react";
 
 export default function Home() {
-  const { user, loading } = useAuth();
-  const { completed } = useOnboarding();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { completed, loading: onboardingLoading } = useOnboarding();
+  const { user } = useUser();
 
-
-
-  
-
-  if (loading) {
+  // Show loading while checking auth and onboarding status
+  if (!isLoaded || onboardingLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
         <ActivityIndicator size="large" />
@@ -20,9 +17,15 @@ export default function Home() {
     );
   }
 
-  
-  // if (!user) return <Redirect href="/(auth)/login" />;
-  if (!completed) return <Redirect href="/onboarding/intro-1" />;
+  // Redirect to sign-in if not authenticated
+  if (!isSignedIn) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
+  // Redirect to onboarding if not completed
+  if (!completed) {
+    return <Redirect href="/onboarding/intro-1" />;
+  }
 
   return <Redirect href="/(tabs)/ai-check" />;
 }
