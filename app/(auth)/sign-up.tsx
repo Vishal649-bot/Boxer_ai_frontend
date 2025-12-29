@@ -47,7 +47,6 @@ export default function SignUpScreen() {
 
       if (createdSessionId && setActiveSession) {
         await setActiveSession({ session: createdSessionId });
-          await AsyncStorage.setItem("hasLoggedIn", "true");
         router.replace('/onboarding/step1-name');
       }
     } catch (err: any) {
