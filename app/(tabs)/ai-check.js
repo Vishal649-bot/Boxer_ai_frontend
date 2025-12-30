@@ -9,7 +9,8 @@ import {SafeAreaView} from "react-native-safe-area-context";
 import {MaterialCommunityIcons, Ionicons} from "@expo/vector-icons";
 import {UploadLoadingModal, AnalysisLoadingModal} from "../../components/loading_screen";
 
-const BACKEND_URL="http://192.168.1.7:5000";
+const BACKEND_URL="https://boxer-ai-backend.vercel.app";
+// const BACKEND_URL="http://192.168.1.7:5000";
 
 export default function AICheck() {
   const [video, setVideo]=useState(null);
