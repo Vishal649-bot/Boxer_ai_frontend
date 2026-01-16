@@ -105,7 +105,7 @@ export function UploadLoadingModal({visible}:any) {
           {/* Steps */}
           <View style={styles.stepsContainer}>
             <StepIndicator 
-              icon="compress" 
+              icon="cloud-upload" 
               text="Processing" 
               status="active" 
             />
